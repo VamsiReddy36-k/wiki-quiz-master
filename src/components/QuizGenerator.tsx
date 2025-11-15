@@ -5,6 +5,19 @@ import { Card } from "@/components/ui/card";
 import { Loader2, BookOpen, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+const wikiUrlSchema = z.string()
+  .url({ message: "Please enter a valid URL" })
+  .refine(url => {
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname.endsWith('.wikipedia.org') && 
+             (parsed.protocol === 'http:' || parsed.protocol === 'https:');
+    } catch {
+      return false;
+    }
+  }, { message: 'Must be a valid Wikipedia URL (e.g., https://en.wikipedia.org/wiki/...)' });
 
 interface QuizGeneratorProps {
   onQuizGenerated: (quizId: string) => void;
@@ -20,8 +33,9 @@ export const QuizGenerator = ({ onQuizGenerated }: QuizGeneratorProps) => {
       return;
     }
 
-    if (!url.includes("wikipedia.org")) {
-      toast.error("Please enter a valid Wikipedia URL");
+    const validation = wikiUrlSchema.safeParse(url);
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message);
       return;
     }
 
