@@ -21,6 +21,23 @@ serve(async (req) => {
       );
     }
 
+    // Validate Wikipedia URL to prevent SSRF attacks
+    try {
+      const parsed = new URL(wikipediaUrl);
+      if (!parsed.hostname.endsWith('.wikipedia.org') || 
+          (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid Wikipedia URL. Must be from *.wikipedia.org' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid URL format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log('Fetching Wikipedia article:', wikipediaUrl);
 
     // Fetch Wikipedia page
